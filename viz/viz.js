@@ -102,21 +102,51 @@ export class StackedPolygonVisualizer {
   }
 
   /** @private */
-  drawPolygon(c, a, rot = 0, polyRadius, radius) {
-    const cx = this.size / 2 + Math.cos(a) * radius;
-    const cy = this.size / 2 + Math.sin(a) * radius;
-    c.beginPath();
-    this.getPolygonPoints(
-      SIDES,
-      polyRadius,
-      a + rot,
-      cx,
-      cy
-    ).forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
-    c.closePath();
-    c.fill();
-    c.stroke();
-  }
+  
+    
+/** @private */
+
+drawPolygon(c, a, rot = 0, polyRadius, radius) {
+
+  const cx = this.size / 2 + Math.cos(a) * radius;
+
+  const cy = this.size / 2 + Math.sin(a) * radius;
+
+  c.beginPath();
+
+  this.getPolygonPoints(
+
+    SIDES,
+
+    polyRadius * Math.pow(1.618, a / (2 * Math.PI)),
+
+    a + rot,
+
+    cx,
+
+    cy
+
+  ).forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+
+  c.closePath();
+
+  c.fill();
+
+  c.stroke();
+
+}
+
+    
+    
+    
+      
+      
+      
+      
+      
+    
+    
+    
 
   /** @private */
   getPolygonPoints(SIDES, r, a, x = 0, y = 0) {
