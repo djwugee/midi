@@ -6,6 +6,7 @@ const midiSignalEl = document.getElementById("midi-signals");
 
 let lastTimestamp = undefined;
 let midiDevice = undefined;
+let synthPlayer = undefined; // Variable to hold the WebMIDIPlayer instance
 
 main();
 
@@ -71,9 +72,21 @@ function processMidiOutputs(midiAccess) {
 
   function selectMidiOutput(id) {
     midiDevice = midiAccess.outputs.get(id);
+
+    // Create a virtual MIDI synth using WebMIDIPlayer
+    if (id === "virtual-synth") {
+      synthPlayer = new WebMIDIPlayer();
+      synthPlayer.setSink(midiDevice.send.bind(midiDevice));
+    }
   }
 
   outputSelectEl.onchange = (event) => selectMidiInput(event.target.value);
+
+  // Add the virtual synth option to the output select element
+  const virtualSynthOption = document.createElement("option");
+  virtualSynthOption.text = "Virtual Synth";
+  virtualSynthOption.value = "virtual-synth";
+  outputSelectEl.options.add(virtualSynthOption);
 
   for (const output of midiAccess.outputs.values()) {
     const option = document.createElement("option");
@@ -86,7 +99,7 @@ function processMidiOutputs(midiAccess) {
     selectMidiOutput(outputSelectEl.firstChild.value);
   } else {
     const option = document.createElement("option");
-    option.text = `(none found)`;
+    option.text = "(none found)";
     option.disabled = true;
     outputSelectEl.options.add(option);
   }
