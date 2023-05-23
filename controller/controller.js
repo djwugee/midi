@@ -1,136 +1,193 @@
 const iframe = document.querySelector("iframe");
+
 const iframeContainer = iframe.parentElement;
+
 const gamepadStatusEl = document.getElementById("gamepad-status");
+
 const outputSelectEl = document.getElementById("output-select");
+
 const midiSignalEl = document.getElementById("midi-signals");
 
 let lastTimestamp = undefined;
+
 let midiDevice = undefined;
-let synthPlayer = undefined; // Variable to hold the WebMIDIPlayer instance
+
+let synth = undefined; // Variable to hold the Tone.js synth
 
 main();
 
 function main() {
+
   window.addEventListener("gamepadconnected", updateGamePads);
+
   window.addEventListener("gamepadconnected", updateGamePads);
+
   navigator.requestMIDIAccess().then(processMidiOutputs);
+
 }
 
 function updateGamePads() {
+
   const gamepad = navigator.getGamepads()[0];
 
   if (gamepad) {
+
     gamepadStatusEl.innerText = gamepad.id;
+
     iframe.classList.add("active");
+
     gamePadProcessLoop();
+
   } else {
+
     gamepadStatusEl.innerText = "(disconnected)";
+
     iframe.classList.remove("active");
+
   }
+
 }
 
 function gamePadProcessLoop() {
+
   requestAnimationFrame(gamePadProcessLoop);
 
   const gamepad = navigator.getGamepads()[0]; // Re-query to get latest gamepad state.
+
   if (!gamepad || lastTimestamp >= gamepad.timestamp) {
+
     return;
+
   }
 
   lastTimestamp = gamepad.timestamp;
 
   const midiMessages = convertGamepadInputToMidi(gamepad);
 
-  if (midiDevice) {
-    midiMessages.forEach((message) => midiDevice.send(message));
+  if (synth) {
+
+    midiMessages.forEach((message) => synth.triggerAttackRelease(message));
+
   }
 
   renderTable(midiMessages);
+
 }
 
 function convertGamepadInputToMidi(gamepad) {
-  const NOTE_OFF = 0x80;
-  const NOTE_ON = 0x90;
 
-  const buttonMessages = gamepad.buttons.map((button, i) => [
-    button.value === 0 ? NOTE_OFF : NOTE_ON, // command
-    i, // pitch
-    Math.round(button.value * 127), // velocity
-  ]);
+  const buttonMessages = gamepad.buttons.map((button, i) => {
 
-  const axesMessages = gamepad.axes.map((axis, i) => [
-    (Math.abs(axis) < 0.1 ? NOTE_OFF : NOTE_ON) + 1,
-    i,
-    Math.round((axis / 2 + 0.5) * 127),
-  ]);
+    return {
+
+      pitch: i,
+
+      velocity: button.value
+
+    };
+
+  });
+
+  const axesMessages = gamepad.axes.map((axis, i) => {
+
+    return {
+
+      pitch: i + gamepad.buttons.length,
+
+      velocity: (axis / 2 + 0.5)
+
+    };
+
+  });
 
   return [...buttonMessages, ...axesMessages];
+
 }
 
 function processMidiOutputs(midiAccess) {
+
   outputSelectEl.innerHTML = "";
 
   function selectMidiOutput(id) {
-  midiDevice = midiAccess.outputs.get(id);
 
-  // Create a virtual MIDI synth using WebMIDIPlayer
-  if (id === "virtual-synth") {
-    synthPlayer = new WebMIDIPlayer();
-    synthPlayer.setSink(midiDevice.send.bind(midiDevice));
+    midiDevice = midiAccess.outputs.get(id);
 
-    // Add settings for the virtual synth
-    synthPlayer.setVolume(0.8); // Adjust the volume (0.0 to 1.0)
-    synthPlayer.setInstrument(1); // Change the instrument (0 to 127)
+    // Create a virtual MIDI synth using Tone.js
+
+    if (id === "virtual-synth") {
+
+      synth = new Tone.PolySynth().toDestination();
+
+    }
+
   }
-}
-
 
   outputSelectEl.onchange = (event) => selectMidiInput(event.target.value);
 
   // Add the virtual synth option to the output select element
+
   const virtualSynthOption = document.createElement("option");
+
   virtualSynthOption.text = "Virtual Synth";
+
   virtualSynthOption.value = "virtual-synth";
+
   outputSelectEl.options.add(virtualSynthOption);
 
   for (const output of midiAccess.outputs.values()) {
+
     const option = document.createElement("option");
+
     option.text = output.name;
+
     option.value = output.id;
+
     outputSelectEl.options.add(option);
+
   }
 
   if (outputSelectEl.firstChild) {
+
     selectMidiOutput(outputSelectEl.firstChild.value);
+
   } else {
+
     const option = document.createElement("option");
+
     option.text = "(none found)";
+
     option.disabled = true;
+
     outputSelectEl.options.add(option);
+
   }
 
   outputSelectEl.firstChild.selected = true;
-}
 
-function extractCommand(cmd) {
-  if (cmd >= 128 && cmd < 144) {
-    return ["NOTE OFF", (cmd - 128).toString()];
-  } else if (cmd >= 144 && cmd < 160) {
-    return ["NOTE ON ", (cmd - 144).toString()];
-  } else {
-    return [`0x${cmd.toString(16)}`, ""];
-  }
 }
 
 function renderTable(midiMessages) {
+
   const columns = [
+
     ["COMMAND ", "CHAN", "PTCH", "VELO"],
-    ...midiMessages.map(([cmd, pitch, velocity]) => [
-      ...extractCommand(cmd),
-      pitch,
-      velocity,
+
+    ...midiMessages.map((message, index) => [
+
+      "NOTE ON ",
+
+      "1", // Assuming channel 1 for all messages
+
+      message.pitch,
+
+      Math.round(message.velocity * 127),
+
     ]),
+
   ].map((row) => row.map((cell) => cell.toString().padStart(6)).join(""));
 
   midiSignalEl.innerText = columns.join("\n");
+
 }
+
+
