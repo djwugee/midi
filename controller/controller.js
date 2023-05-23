@@ -71,14 +71,19 @@ function processMidiOutputs(midiAccess) {
   outputSelectEl.innerHTML = "";
 
   function selectMidiOutput(id) {
-    midiDevice = midiAccess.outputs.get(id);
+  midiDevice = midiAccess.outputs.get(id);
 
-    // Create a virtual MIDI synth using WebMIDIPlayer
-    if (id === "virtual-synth") {
-      synthPlayer = new WebMIDIPlayer();
-      synthPlayer.setSink(midiDevice.send.bind(midiDevice));
-    }
+  // Create a virtual MIDI synth using WebMIDIPlayer
+  if (id === "virtual-synth") {
+    synthPlayer = new WebMIDIPlayer();
+    synthPlayer.setSink(midiDevice.send.bind(midiDevice));
+
+    // Add settings for the virtual synth
+    synthPlayer.setVolume(0.8); // Adjust the volume (0.0 to 1.0)
+    synthPlayer.setInstrument(0); // Change the instrument (0 to 127)
   }
+}
+
 
   outputSelectEl.onchange = (event) => selectMidiInput(event.target.value);
 
