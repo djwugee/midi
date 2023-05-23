@@ -80,7 +80,7 @@ function processMidiOutputs(midiAccess) {
 
     // Add settings for the virtual synth
     synthPlayer.setVolume(0.8); // Adjust the volume (0.0 to 1.0)
-    synthPlayer.setInstrument(0); // Change the instrument (0 to 127)
+    synthPlayer.setInstrument(1); // Change the instrument (0 to 127)
   }
 }
 
